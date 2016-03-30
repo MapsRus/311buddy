@@ -51,5 +51,8 @@ svg {
 
 svg text {
   font-size: 12px;
+}
 
+div.cartodb-popup.v2.header div.cartodb-popup-header {
+    max-height: 92px;
 }
