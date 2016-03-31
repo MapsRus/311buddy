@@ -74,5 +74,110 @@
     <script src="js/leaflet-hash.js"></script>
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/js/bootstrap.min.js"></script>
     <script src = 'js/script.js'></script>
+    <script type = 'text\sql' id = 'mapSqlTemplate'>
+      WITH 
+      -- group points with identical point geometries
+      -- sort groups by their y-axis location so they will be rendered top to bottom
+      m AS (
+        SELECT array_agg(cartodb_id) id_list, the_geom_webmercator, ST_Y(the_geom_webmercator) y 
+        FROM cleaned WHERE created_date > current_date - interval '30 days'
+        GROUP BY the_geom_webmercator 
+        ORDER BY y DESC
+      ),
+
+      -- turn the groups of points back into individual rows with a number 
+      f AS (
+        SELECT  generate_series(1, array_length(id_list,1)) p, unnest(id_list) cartodb_id, the_geom_webmercator 
+        FROM m
+      )
+
+     -- replace geometries join with original dataset on cartodb_id to get the attributes
+    SELECT  ST_Translate(f.the_geom_webmercator,0,f.p*{{factor}}) the_geom_webmercator, f.cartodb_id, q.agency, q.complaint_type, q.created_date, q.descriptor, incident_address, q.resolution_description, q.status
+    FROM f, cleaned q
+    WHERE f.cartodb_id = q.cartodb_id 
+
+    </script>
+    <script type="text\cartocss" id="mapStyleTemplate">
+      /** category visualization */
+
+      #cleaned {
+         marker-fill-opacity: 0.9;
+         marker-line-color: #FFF;
+         marker-line-width: 1;
+         marker-line-opacity: .7;
+         marker-placement: point;
+         marker-type: ellipse;
+         marker-width: 8;
+         marker-height: 5;
+         marker-allow-overlap: true;
+      }
+
+      #cleaned[zoom<16] {
+        marker-width:5;
+        marker-height: 3.5;
+      }
+
+      #cleaned[zoom<15] {
+        marker-width:4;
+        marker-line-width:0;
+      }
+
+      #cleaned[zoom<14] {
+        marker-width:3;
+        marker-line-width:0;
+      }
+
+      #cleaned[zoom<13] {
+        marker-width:2;
+        marker-line-width:0;
+      }
+      #cleaned[zoom<12] {
+        marker-width:1;
+        marker-line-width:0;
+      }
+
+      #cleaned[agency="HPD"] {
+         marker-fill: #A6CEE3;
+      }
+      #cleaned[agency="NYPD"] {
+         marker-fill: #1F78B4;
+      }
+      #cleaned[agency="DOT"] {
+         marker-fill: #B2DF8A;
+      }
+      #cleaned[agency="DEP"] {
+         marker-fill: #33A02C;
+      }
+      #cleaned[agency="DSNY"] {
+         marker-fill: #FB9A99;
+      }
+      #cleaned[agency="DOB"] {
+         marker-fill: #E31A1C;
+      }
+      #cleaned[agency="DPR"] {
+         marker-fill: #FDBF6F;
+      }
+      #cleaned[agency="DOHMH"] {
+         marker-fill: #FF7F00;
+      }
+      #cleaned[agency="DOF"] {
+         marker-fill: #CAB2D6;
+      }
+      #cleaned[agency="DHS"] {
+         marker-fill: #6A3D9A;
+      }
+      #cleaned[agency="TLC"] {
+         marker-fill: #f7ff00;
+      }
+      #cleaned[agency="HRA"] {
+         marker-fill: #ff00d3;
+      }
+      #cleaned[agency="DCA"] {
+         marker-fill: #00ceff;
+      }
+      #cleaned {
+         marker-fill: #DDDDDD;
+      }
+    </script>
   </body>
 </html>

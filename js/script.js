@@ -6,19 +6,19 @@
 
     var sql = new cartodb.SQL({ user: cdb_user });
 
+    var zoom = 13;
+    var cdbLayer;
+
     //gets the current date range an updates the header
     getDataRange();
 
     //create a new empty leaflet map over NYC
     var map = new L.Map('map', { 
       center: [40.705563,-73.971977],
-      zoom: 13
+      zoom: zoom
     });
 
-    //event handler for any changes to the map viewport
-    map.on('moveend', function(e) {
-      fetchData(map.getBounds());
-    });
+
 
     //add mapzen geocoder to allow for address search
     var options = {
@@ -38,14 +38,34 @@
       attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, &copy; <a href="http://cartodb.com/attributions">CartoDB</a>'
     }).addTo(map);
 
-    var layerUrl = 'https://cwhong.cartodb.com/api/v2/viz/99d7fb1c-f625-11e5-88fa-0e31c9be1b51/viz.json';
+    //var layerUrl = 'https://cwhong.cartodb.com/api/v2/viz/99d7fb1c-f625-11e5-88fa-0e31c9be1b51/viz.json';
 
-    //create the CartoDB Layer
-    cartodb.createLayer(map, layerUrl)
-      .addTo(map)
-      .on('done', function(layer) {
-        fetchData(map.getBounds());
-      })
+    $.getJSON('data/viz.json', function(vizjson) {
+      console.log(vizjson);
+
+      var layerOptions = vizjson.layers[1].options.layer_definition.layers[0].options;
+
+      layerOptions.sql = Mustache.render($('#mapSqlTemplate').text(), {factor: 10});
+      layerOptions.cartocss = Mustache.render($('#mapStyleTemplate').text(), {});
+      //create the CartoDB Layer
+      cartodb.createLayer(map, vizjson)
+        .addTo(map)
+        .on('done', function(layer) {
+          cdbLayer = layer.getSubLayer(0);
+          fetchData(map.getBounds());
+          updateMap(map.getZoom());
+
+          //event handler for any changes to the map viewport
+          map.on('moveend', function(e) {
+            fetchData(map.getBounds());
+            updateMap(map.getZoom());
+          });
+
+
+        })
+    });
+
+
 
     //set up charts with nv.d3.js
     nv.addGraph(function() {
@@ -108,6 +128,23 @@
           max: data.rows[0].max
         }))
       })
+    }
+
+    function updateMap(zoom) {
+      console.log('new zoom is ' + zoom)
+      cdbLayer.setSQL(Mustache.render($('#mapSqlTemplate').text(), {factor: getFactor(zoom)}));
+      cdbLayer.setCartoCSS(Mustache.render($('#mapStyleTemplate').text(), {}));
+    }
+
+    function getFactor(z) {
+      console.log(z);
+       return z == 14 ? 30 :
+        z == 15 ? 20 :
+        z == 16 ? 10 :
+        z == 17 ? 5 :
+        z == 18 ? 2.5 :
+        10;
+
     }
 
     //fetches data to power the charts based on the current viewport
