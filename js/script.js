@@ -15,7 +15,9 @@
     //create a new empty leaflet map over NYC
     var map = new L.Map('map', { 
       center: [40.705563,-73.971977],
-      zoom: zoom
+      zoom: zoom,
+      minZoom: 12,
+      maxZoom: 18
     });
 
 
@@ -138,12 +140,13 @@
 
     function getFactor(z) {
       console.log(z);
-       return z == 14 ? 30 :
+       return z < 14 ? 30 :
         z == 15 ? 20 :
         z == 16 ? 10 :
         z == 17 ? 5 :
         z == 18 ? 2.5 :
-        10;
+        z == 19 ? 1.25 :
+        null;
 
     }
 
