@@ -76,22 +76,16 @@
     <script src = 'js/script.js'></script>
     <script type = 'text\sql' id = 'mapSqlTemplate'>
       WITH 
-      -- group points with identical point geometries
-      -- sort groups by their y-axis location so they will be rendered top to bottom
       m AS (
         SELECT array_agg(cartodb_id) id_list, the_geom_webmercator, ST_Y(the_geom_webmercator) y 
         FROM cleaned WHERE created_date > current_date - interval '30 days'
         GROUP BY the_geom_webmercator 
         ORDER BY y DESC
       ),
-
-      -- turn the groups of points back into individual rows with a number 
       f AS (
         SELECT  generate_series(1, array_length(id_list,1)) p, unnest(id_list) cartodb_id, the_geom_webmercator 
         FROM m
       )
-
-     -- replace geometries join with original dataset on cartodb_id to get the attributes
     SELECT  ST_Translate(f.the_geom_webmercator,0,f.p*{{factor}}) the_geom_webmercator, f.cartodb_id, q.agency, q.complaint_type, q.created_date, q.descriptor, incident_address, q.resolution_description, q.status
     FROM f, cleaned q
     WHERE f.cartodb_id = q.cartodb_id 

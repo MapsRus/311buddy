@@ -140,7 +140,7 @@
 
     function getFactor(z) {
       console.log(z);
-       return z < 14 ? 30 :
+       return z <= 14 ? 30 :
         z == 15 ? 20 :
         z == 16 ? 10 :
         z == 17 ? 5 :
